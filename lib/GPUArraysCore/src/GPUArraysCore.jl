@@ -209,19 +209,4 @@ macro allowscalar(ex)
     end
 end
 
-
-## other
-
-"""
-    backend(x)
-    backend(T::Type)
-
-Gets the GPUArrays back-end responsible for managing arrays of type `T`.
-"""
-get_backend(::Type) = error("This object is not a GPU array") # COV_EXCL_LINE
-get_backend(x) = get_backend(typeof(x))
-
-# WrappedArray from Adapt for Base wrappers.
-get_backend(::Type{WA}) where WA<:WrappedArray = backend(unwrap_type(WA))
-
 end # module GPUArraysCore
