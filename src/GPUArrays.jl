@@ -34,7 +34,5 @@ include("host/quirks.jl")
 include("host/uniformscaling.jl")
 include("host/statistics.jl")
 
-include("deprecated.jl")
-
 
 end # module
