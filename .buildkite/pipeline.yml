@@ -9,8 +9,10 @@ steps:
       julia -e 'using Pkg
 
                 println("--- :julia: Instantiating project")
-                Pkg.develop(; path=pwd())
-                Pkg.add(; url="https://github.com/JuliaGPU/CUDA.jl/", rev="tb/gpuarrays_kernelabstractions")
+                Pkg.develop([PackageSpec(path=pwd()),
+                             PackageSpec(path=joinpath(pwd(), "lib", "GPUArraysCore"))])
+                Pkg.add(; url="https://github.com/JuliaGPU/CUDA.jl/",
+                          rev="tb/gpuarrays_kernelabstractions")
 
                 println("+++ :julia: Running tests")
                 Pkg.test("CUDA"; coverage=true)'
@@ -30,8 +32,10 @@ steps:
       julia -e 'using Pkg;
 
                 println("--- :julia: Instantiating project")
-                Pkg.develop(; path=pwd())
-                Pkg.add(; url="https://github.com/JuliaGPU/oneAPI.jl/", rev="tb/gpuarrays_kernelabstractions")
+                Pkg.develop([PackageSpec(path=pwd()),
+                             PackageSpec(path=joinpath(pwd(), "lib", "GPUArraysCore"))])
+                Pkg.add(; url="https://github.com/JuliaGPU/oneAPI.jl/",
+                          rev="tb/gpuarrays_kernelabstractions")
 
                 println("+++ :julia: Building support library")
                 oneapi = dirname(dirname(Base.find_package("oneAPI")))
@@ -56,8 +60,10 @@ steps:
       julia -e 'using Pkg;
 
                 println("--- :julia: Instantiating project")
-                Pkg.develop(; path=pwd())
-                Pkg.add(; url="https://github.com/JuliaGPU/Metal.jl/", rev="tb/gpuarrays_kernelabstractions")
+                Pkg.develop([PackageSpec(path=pwd()),
+                             PackageSpec(path=joinpath(pwd(), "lib", "GPUArraysCore"))])
+                Pkg.add(; url="https://github.com/JuliaGPU/Metal.jl/",
+                          rev="tb/gpuarrays_kernelabstractions")
 
                 println("+++ :julia: Running tests")
                 Pkg.test("Metal"; coverage=true)'
