@@ -10,7 +10,7 @@ steps:
 
                 println("--- :julia: Instantiating project")
                 Pkg.develop(; path=pwd())
-                Pkg.add(; url="https://github.com/leios/CUDA.jl/", rev="GtK_trans")
+                Pkg.add(; url="https://github.com/JuliaGPU/CUDA.jl/", rev="tb/gpuarrays_kernelabstractions")
 
                 println("+++ :julia: Running tests")
                 Pkg.test("CUDA"; coverage=true)'
@@ -31,13 +31,11 @@ steps:
 
                 println("--- :julia: Instantiating project")
                 Pkg.develop(; path=pwd())
-                Pkg.add(; url="https://github.com/leios/oneAPI.jl/", rev="GtK_transition")
+                Pkg.add(; url="https://github.com/JuliaGPU/oneAPI.jl/", rev="tb/gpuarrays_kernelabstractions")
 
                 println("+++ :julia: Building support library")
-                filename = Base.find_package("oneAPI")
-                filename = filename[1:findfirst("oneAPI.jl", filename)[1]-1]
-                filename *= "../deps/build_ci.jl"
-                include(filename)
+                oneapi = dirname(dirname(Base.find_package("oneAPI")))
+                include(joinpath(oneapi, "deps", "build_ci.jl"))
                 Pkg.activate()
 
                 println("+++ :julia: Running tests")
@@ -59,7 +57,7 @@ steps:
 
                 println("--- :julia: Instantiating project")
                 Pkg.develop(; path=pwd())
-                Pkg.add(; url="https://github.com/leios/Metal.jl/", rev="GtK_transition")
+                Pkg.add(; url="https://github.com/JuliaGPU/Metal.jl/", rev="tb/gpuarrays_kernelabstractions")
 
                 println("+++ :julia: Running tests")
                 Pkg.test("Metal"; coverage=true)'
