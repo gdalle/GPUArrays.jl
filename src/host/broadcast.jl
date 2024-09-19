@@ -116,10 +116,10 @@ function Base.map!(f, dest::AnyGPUArray, xs::AbstractArray...)
         bc = Broadcast.preprocess(dest, bc)
     end
 
-    # grid-stride kernel
     @kernel function map_kernel(dest, bc)
-        j = @index(Global, Linear)
-        @inbounds dest[j] = bc[j]
+        i = @index(Global, Linear)
+        I = CartesianIndices(axes(bc))[i]
+        @inbounds dest[i] = bc[I]
     end
 
     kernel = map_kernel(get_backend(dest))
