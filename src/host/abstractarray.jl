@@ -159,7 +159,6 @@ for (D, S) in ((AnyGPUArray, Array),
 end
 
 # kernel-based variant for copying between wrapped GPU arrays
-# TODO: Add `@Const` to `src`
 @kernel function linear_copy_kernel!(dest, dstart, src, sstart, n)
     i = @index(Global, Linear)
     if i <= n

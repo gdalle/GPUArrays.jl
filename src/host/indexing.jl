@@ -82,14 +82,11 @@ end
     return vectorized_getindex!(dest, src, Is...)
 end
 
-@kernel function getindex_kernel(dest, src, idims,
-                                 Is::Vararg{Any,N}) where {N}
+@kernel function getindex_kernel(dest, src, idims, Is...)
     i = @index(Global, Linear)
     getindex_generated(dest, src, idims, i, Is...)
 end
-
-@generated function getindex_generated(dest, src, idims, i,
-                                       Is::Vararg{Any,N}) where {N}
+@generated function getindex_generated(dest, src, idims, i, Is::Vararg{Any,N}) where {N}
     quote
         is = @inbounds CartesianIndices(idims)[i]
         @nexprs $N i -> I_i = @inbounds(Is[i][is[i]])
@@ -120,13 +117,11 @@ end
     return dest
 end
 
-@kernel function setindex_kernel(dest, src, idims, len,
-                                    Is::Vararg{Any,N}) where {N}
+@kernel function setindex_kernel(dest, src, idims, len, Is...)
     i = @index(Global, Linear)
     setindex_generated(dest, src, idims, len, i, Is...)
 end
-@generated function setindex_generated(dest, src, idims, len, i,
-                                       Is::Vararg{Any,N}) where {N}
+@generated function setindex_generated(dest, src, idims, len, i, Is::Vararg{Any,N}) where {N}
     quote
         i > len && return
         is = @inbounds CartesianIndices(idims)[i]

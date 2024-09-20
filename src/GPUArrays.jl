@@ -15,10 +15,11 @@ using LLVM.Interop
 using Reexport
 @reexport using GPUArraysCore
 
-## executed on-device
+using KernelAbstractions
+
+# device functionality
 include("device/abstractarray.jl")
 
-using KernelAbstractions
 # host abstractions
 include("host/abstractarray.jl")
 include("host/construction.jl")

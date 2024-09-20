@@ -11,14 +11,15 @@ Base.convert(::Type{T}, a::AbstractArray) where {T<:AbstractGPUArray} = a isa T 
 
 function Base.fill!(A::AnyGPUArray{T}, x) where T
     isempty(A) && return A
+
     @kernel function fill_kernel!(a, val)
         idx = @index(Global, Linear)
         @inbounds a[idx] = val
     end
 
-    # ndrange set for a possible 0D evaluation
-    fill_kernel!(get_backend(A))(A, x,
-                                 ndrange = length(size(A)) > 0 ? size(A) : (1,))
+    # ndims check for 0D support
+    kernel = fill_kernel!(get_backend(A))
+    kernel(A, x; ndrange = ndims(A) > 0 ? size(A) : (1,))
     A
 end
 

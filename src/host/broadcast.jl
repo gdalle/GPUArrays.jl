@@ -59,16 +59,16 @@ end
         @inbounds dest[I] = bc[I]
     end
 
-    # grid-stride kernel, ndrange set for possible 0D evaluation
-    if ndims(dest) == 1 || (isa(IndexStyle(dest), IndexLinear) &&
+    broadcast_kernel = if ndims(dest) == 1 ||
+                          (isa(IndexStyle(dest), IndexLinear) &&
                            isa(IndexStyle(bc), IndexLinear))
-        broadcast_kernel_linear(get_backend(dest))(dest, bc;
-            ndrange = length(size(dest)) > 0 ? length(dest) : 1)
+        broadcast_kernel_linear(get_backend(dest))
     else
-        broadcast_kernel_cartesian(get_backend(dest))(dest, bc;
-            ndrange = sz = length(size(dest)) > 0 ? size(dest) : (1,))
+        broadcast_kernel_cartesian(get_backend(dest))
     end
 
+    # ndims check for 0D support
+    broadcast_kernel(dest, bc; ndrange = ndims(dest) > 0 ? size(dest) : (1,))
     if eltype(dest) <: BrokenBroadcast
         throw(ArgumentError("Broadcast operation resulting in $(eltype(eltype(dest))) is not GPU compatible"))
     end

@@ -87,7 +87,7 @@ function Random.rand!(rng::RNG, A::AnyGPUArray{T}) where T <: Number
         idx = @index(Global, Linear)
         @inbounds a[idx] = gpu_rand(T, ((idx-1)%length(randstate)+1), randstate)
     end
-    rand!(get_backend(A))(A, rng.state, ndrange = size(A))
+    rand!(get_backend(A))(A, rng.state; ndrange = size(A))
     A
 end
 
@@ -95,7 +95,7 @@ function Random.randn!(rng::RNG, A::AnyGPUArray{T}) where T <: Number
     isempty(A) && return A
     threads = (length(A) - 1) ÷ 2 + 1
     @kernel function randn!(a, randstates)
-        i = @index(Global, Linear) 
+        i = @index(Global, Linear)
         idx = 2*(i - 1) + 1
         U1 = gpu_rand(T, i, randstates)
         U2 = gpu_rand(T, i, randstates)

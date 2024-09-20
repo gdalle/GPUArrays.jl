@@ -1,17 +1,20 @@
 # reference implementation on the CPU
 # This acts as a wrapper around KernelAbstractions's parallel CPU
-# functionality. It is useful for testing GPUArrays (and other packages) 
+# functionality. It is useful for testing GPUArrays (and other packages)
 # when no GPU is present.
 # This file follows conventions from AMDGPU.jl
 
 module JLArrays
 
+export JLArray, JLVector, JLMatrix, jl, JLBackend
+
 using GPUArrays
+
 using Adapt
+
 import KernelAbstractions
 import KernelAbstractions: Adapt, StaticArrays, Backend, Kernel, StaticSize, DynamicSize, partition, blocks, workitems, launch_config
 
-export JLArray, JLVector, JLMatrix, jl, JLBackend
 
 #
 # Device functionality
@@ -24,7 +27,6 @@ struct JLBackend <: KernelAbstractions.GPU
     JLBackend(;static::Bool=false) = new(static)
 end
 
-
 struct Adaptor end
 jlconvert(arg) = adapt(Adaptor(), arg)
 
@@ -34,6 +36,46 @@ struct JlRefValue{T} <: Ref{T}
 end
 Base.getindex(r::JlRefValue) = r.x
 Adapt.adapt_structure(to::Adaptor, r::Base.RefValue) = JlRefValue(adapt(to, r[]))
+
+## executed on-device
+
+# array type
+
+struct JLDeviceArray{T, N} <: AbstractDeviceArray{T, N}
+    data::Vector{UInt8}
+    offset::Int
+    dims::Dims{N}
+end
+
+Base.elsize(::Type{<:JLDeviceArray{T}}) where {T} = sizeof(T)
+
+Base.size(x::JLDeviceArray) = x.dims
+Base.sizeof(x::JLDeviceArray) = Base.elsize(x) * length(x)
+
+Base.unsafe_convert(::Type{Ptr{T}}, x::JLDeviceArray{T}) where {T} =
+    convert(Ptr{T}, pointer(x.data)) + x.offset*Base.elsize(x)
+
+# conversion of untyped data to a typed Array
+function typed_data(x::JLDeviceArray{T}) where {T}
+    unsafe_wrap(Array, pointer(x), x.dims)
+end
+
+@inline Base.getindex(A::JLDeviceArray, index::Integer) = getindex(typed_data(A), index)
+@inline Base.setindex!(A::JLDeviceArray, x, index::Integer) = setindex!(typed_data(A), x, index)
+
+
+#
+# Host abstractions
+#
+
+function check_eltype(T)
+  if !Base.allocatedinline(T)
+    explanation = explain_allocatedinline(T)
+    error("""
+      JLArray only supports element types that are allocated inline.
+      $explanation""")
+  end
+end
 
 mutable struct JLArray{T, N} <: AbstractGPUArray{T, N}
     data::DataRef{Vector{UInt8}}
@@ -61,47 +103,6 @@ mutable struct JLArray{T, N} <: AbstractGPUArray{T, N}
         obj = new{T,N}(ref, offset, dims)
         finalizer(unsafe_free!, obj)
     end
-end
-
-Adapt.adapt_storage(::JLBackend, a::Array) = Adapt.adapt(JLArrays.JLArray, a)
-Adapt.adapt_storage(::JLBackend, a::JLArrays.JLArray) = a
-Adapt.adapt_storage(::KernelAbstractions.CPU, a::JLArrays.JLArray) = convert(Array, a)
-
-# array type
-
-struct JLDeviceArray{T, N} <: AbstractDeviceArray{T, N}
-    data::Vector{UInt8}
-    offset::Int
-    dims::Dims{N}
-end
-
-Base.elsize(::Type{<:JLDeviceArray{T}}) where {T} = sizeof(T)
-
-Base.size(x::JLDeviceArray) = x.dims
-Base.sizeof(x::JLDeviceArray) = Base.elsize(x) * length(x)
-
-Base.unsafe_convert(::Type{Ptr{T}}, x::JLDeviceArray{T}) where {T} =
-    convert(Ptr{T}, pointer(x.data)) + x.offset*Base.elsize(x)
-
-# conversion of untyped data to a typed Array
-function typed_data(x::JLDeviceArray{T}) where {T}
-    unsafe_wrap(Array, pointer(x), x.dims)
-end
-
-@inline Base.getindex(A::JLDeviceArray, index::Integer) = getindex(typed_data(A), index)
-@inline Base.setindex!(A::JLDeviceArray, x, index::Integer) = setindex!(typed_data(A), x, index)
-
-#
-# Host abstractions
-#
-
-function check_eltype(T)
-  if !Base.allocatedinline(T)
-    explanation = explain_allocatedinline(T)
-    error("""
-      JLArray only supports element types that are allocated inline.
-      $explanation""")
-  end
 end
 
 unsafe_free!(a::JLArray) = GPUArrays.unsafe_free!(a.data)
@@ -380,7 +381,10 @@ function (obj::Kernel{JLBackend})(args...; ndrange=nothing, workgroupsize=nothin
     device_args = jlconvert.(args)
     new_obj = convert_to_cpu(obj)
     new_obj(device_args...; ndrange, workgroupsize)
-
 end
+
+Adapt.adapt_storage(::JLBackend, a::Array) = Adapt.adapt(JLArrays.JLArray, a)
+Adapt.adapt_storage(::JLBackend, a::JLArrays.JLArray) = a
+Adapt.adapt_storage(::KernelAbstractions.CPU, a::JLArrays.JLArray) = convert(Array, a)
 
 end
